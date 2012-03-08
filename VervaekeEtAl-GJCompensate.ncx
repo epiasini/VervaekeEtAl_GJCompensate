@@ -10,7 +10,7 @@ part of NeuroML or any standardised XML specification. -->
  <object class="ucl.physiol.neuroconstruct.project.BasicProjectInfo">
   <void property="projectDescription">
    <string>From: Gap junctions compensate for sublinear dendritic integration in an inhibitory network
-By: Vervaeke, Lorincz, Nusser and Silver.
+By: Vervaeke, Lorincz, Nusser and Silver., Science 2012
 
 In the network model, there are four groups of gap junctions; one that connects cells in the granule cell layer (GapjuncGCL), and three groups that connect cells in the inner-, middle- and outer molecular layer respectively.
 
@@ -424,14 +424,6 @@ In the network model, there are four groups of gap junctions; one that connects 
     <string></string>
    </void>
    <void method="put">
-    <float>-1.0</float>
-    <string>objref random_conductance_generator
-
-random_conductance_generator = new Random()
-
-random_conductance_generator.MCellRan4()</string>
-   </void>
-   <void method="put">
     <float>1.0</float>
     <string>print &quot;Changing values of ena, ek&quot;
 
@@ -451,6 +443,14 @@ forall if (ismembrane(&quot;VariableLeakConductance&quot;)) {
 	gmax_VariableLeakConductance = random_conductance_generator.uniform(0, 26E-5)
 	print gmax_VariableLeakConductance
 }</string>
+   </void>
+   <void method="put">
+    <float>-1.0</float>
+    <string>objref random_conductance_generator
+
+random_conductance_generator = new Random()
+
+random_conductance_generator.MCellRan4()</string>
    </void>
    <void method="put">
     <float>2.0</float>
