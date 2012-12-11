@@ -10216,7 +10216,7 @@ Value for scaling factor to apply to current to get change in conc should be
                 </bio:mechanism>
 
                 <bio:mechanism name="KBK" type="Channel Mechanism">
-                    <bio:parameter name="gmax" value="9.0">
+                    <bio:parameter name="gmax" value="3.0">
                         <bio:group>soma_group</bio:group>
                     </bio:parameter>
                 </bio:mechanism>
