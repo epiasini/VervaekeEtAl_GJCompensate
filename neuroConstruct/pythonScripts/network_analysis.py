@@ -2,18 +2,42 @@ import csv
 import numpy as np
 
 from scipy.spatial import distance
+from scipy import optimize
 from matplotlib import pyplot as plt
 
 def vervaeke2010_spatial_dependence(r):
-    return (-1745. + 1836./(1 + np.exp((x-267)/39)))/100
+    return (-1745. + 1836./(1 + np.exp((r-267)/39)))/100
 
 def degree_integrand(r, r_0, c):
     return r/(1+np.exp((r-r_0)/c))
 
+def approximate_analytical_integral(r_max, r_0, c):
+    return c*r_0*(r_max/c - np.log(1+np.exp(r_max/c)) + np.log(2)) + (c*np.pi)**2/12
+
+def infinite_net_analytical_sol(rho_goc=4.6e-6, l=80., a=0.856, r_0=122, delta=16.9):
+    return rho_goc * 2 * np.pi * l * a * (r_0**2/2 + (delta*np.pi)**2/12)
+
 def calculate_degree(n=28, r_max=155., a=-17.45, b=-18.36, c=39, r_0=267, dx=0.01):
     x = np.arange(0, r_max, dx)
-    return (n-1)*(a - (2*b)*np.trapz(degree_integrand(x, r_0=r_0, c=c), dx=dx)/r_max**2)
+    numerical_sol = (n-1)*(a - (2*b)*np.trapz(degree_integrand(x, r_0=r_0, c=c), dx=dx)/r_max**2)
+    print np.trapz(degree_integrand(x, r_0=r_0, c=c), dx=dx)
+    print approximate_analytical_integral(r_max,r_0,c)
+    approximate_analytical_sol = (n-1)*(a - (2*b)*approximate_analytical_integral(r_max,r_0,c)/r_max**2)
+    return numerical_sol, infinite_net_analytical_sol()
 
+def fermi_dirac_dependence(r, a, r_0, delta):
+    return a/(1 + np.exp((r-r_0)/delta))
+
+def fermi_dirac_fit():
+    x = np.arange(0, 155., 0.01)
+    vervaeke_values = vervaeke2010_spatial_dependence(x)
+    a, r_0, delta = optimize.curve_fit(fermi_dirac_dependence, x, vervaeke_values, [0.8, 267, 39])[0]
+    print a, r_0, delta
+    new_x = np.arange(0, 200, 0.01)
+    plt.plot(x, vervaeke_values)
+    plt.plot(new_x, fermi_dirac_dependence(new_x, a, r_0, delta))
+    plt.grid('on')
+    plt.show()
 
 if __name__ == "__main__":
     n_trials = 10
