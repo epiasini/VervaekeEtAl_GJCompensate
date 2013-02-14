@@ -15,7 +15,7 @@ def approximate_analytical_integral(r_max, r_0, c):
     return c*r_0*(r_max/c - np.log(1+np.exp(r_max/c)) + np.log(2)) + (c*np.pi)**2/12
 
 def infinite_net_analytical_sol(rho_goc=4.6e-6, l=80., a=0.856, r_0=122, delta=16.9):
-    return rho_goc * 2 * np.pi * l * a * (r_0**2/2 + (delta*np.pi)**2/12)
+    return rho_goc * 2 * np.pi * l * a * (r_0**2/2 + (delta*np.pi)**2/6)
 
 def calculate_degree(n=28, r_max=155., a=-17.45, b=-18.36, c=39, r_0=267, dx=0.01):
     x = np.arange(0, r_max, dx)
@@ -34,9 +34,13 @@ def fermi_dirac_fit():
     a, r_0, delta = optimize.curve_fit(fermi_dirac_dependence, x, vervaeke_values, [0.8, 267, 39])[0]
     print a, r_0, delta
     new_x = np.arange(0, 200, 0.01)
-    plt.plot(x, vervaeke_values)
-    plt.plot(new_x, fermi_dirac_dependence(new_x, a, r_0, delta))
-    plt.grid('on')
+    fig, ax = plt.subplots()
+    ax.plot(x, vervaeke_values, label='Vervaeke2010', color='k')
+    ax.plot(new_x, fermi_dirac_dependence(new_x, a, r_0, delta), label='Fermi function')
+    ax.grid('on')
+    ax.set_xlabel(r'planar distance ($\mu m$)')
+    ax.legend()
+
     plt.show()
 
 if __name__ == "__main__":
@@ -95,11 +99,13 @@ if __name__ == "__main__":
     fig, ax1 = plt.subplots()
     ax1.hist(x=(np.ravel(distances), np.concatenate(edge_lengths)), range=[0., 160.])
     ax2 = ax1.twinx()
+    ax1.set_xlabel(r'full euclidean distance ($\mu m$)')
     # figure out the centres of the histogram bars on the x axis
     x = hist_all[1][:-1]+(hist_all[1][1]-hist_all[1][0])/2
     # plot the conected/total cells ratio
-    ax2.plot(x, np.nan_to_num(np.asarray(hist_connected[0], dtype=np.float)/np.asarray(hist_all[0], dtype=np.float)), marker='o', color='r')
+    ax2.plot(x, np.nan_to_num(np.asarray(hist_connected[0], dtype=np.float)/np.asarray(hist_all[0], dtype=np.float)), marker='o', color='r', label='Vervaeke2010 - model')
     # plot the fit to the experimental data (Vervaeke2010, figure 7)
-    ax2.plot(x, vervaeke2010_spatial_dependence(x), marker='o', color='k')
+    ax2.plot(x, vervaeke2010_spatial_dependence(x), marker='o', color='k', label='Vervaeke2010 - exp')
     ax2.set_ylim((0., 1.1))
+    ax2.legend(loc='upper left')
     plt.show()
