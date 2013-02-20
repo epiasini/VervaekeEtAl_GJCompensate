@@ -11,7 +11,7 @@ if __name__ == "__main__":
     from java.util import Vector, ArrayList
     from ucl.physiol import neuroconstruct as nc
 
-    n_trials = 10
+    n_trials = 100
 
     pm = nc.project.ProjectManager(None,None)
     project_path = '../VervaekeEtAl-GJCompensate.ncx'
@@ -36,8 +36,14 @@ if __name__ == "__main__":
             time.sleep(0.02)
         print('network number %d generated' % trial)
         # extract connectivity structure
-        syn_conns = project.generatedNetworkConnections.getSynapticConnections('NetConn_CellGroup_4_CellGroup_4_1')
-        edges = [(sc.sourceEndPoint.cellNumber, sc.targetEndPoint.cellNumber) for sc in syn_conns if sc.props[0].weight]
+        conn_names = ['NetConn_CellGroup_4_CellGroup_4_1',
+                      'NetConn_CellGroup_4_CellGroup_4_2',
+                      'NetConn_CellGroup_4_CellGroup_4_3',
+                      'NetConn_CellGroup_4_CellGroup_4_4']
+        syn_conns = [project.generatedNetworkConnections.getSynapticConnections(conn) for conn in conn_names]
+        edges = []
+        for conn in syn_conns:
+            edges.extend([(sc.sourceEndPoint.cellNumber, sc.targetEndPoint.cellNumber) for sc in conn if sc.props[0].weight])
         # extract cell positions
         cell_positions = [(pos_record.x_pos, pos_record.y_pos, pos_record.z_pos) for pos_record in project.generatedCellPositions.getPositionRecords('CellGroup_4')]
         # save to disk

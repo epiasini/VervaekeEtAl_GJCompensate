@@ -1,8 +1,10 @@
 import csv
 import numpy as np
+import itertools
 
 from scipy.spatial import distance
 from scipy import optimize
+from scipy.stats import poisson, binom
 from matplotlib import pyplot as plt
 
 def vervaeke2010_spatial_dependence(r):
@@ -14,8 +16,8 @@ def degree_integrand(r, r_0, c):
 def approximate_analytical_integral(r_max, r_0, c):
     return c*r_0*(r_max/c - np.log(1+np.exp(r_max/c)) + np.log(2)) + (c*np.pi)**2/12
 
-def infinite_net_analytical_sol(rho_goc=4.6e-6, l=80., a=0.856, r_0=122, delta=16.9):
-    return rho_goc * 2 * np.pi * l * a * (r_0**2/2 + (delta*np.pi)**2/6)
+def infinite_net_analytical_sol(rho_goc=4.6e-6, l=80., a=0.856, r_0=122., delta=16.9):
+    return a * rho_goc * l * np.pi * r_0**2 * (1 + np.pi**2./3.*(delta/r_0)**2 - 1./6.*(l/r_0)**2)
 
 def calculate_degree(n=28, r_max=155., a=-17.45, b=-18.36, c=39, r_0=267, dx=0.01):
     x = np.arange(0, r_max, dx)
@@ -38,13 +40,14 @@ def fermi_dirac_fit():
     ax.plot(x, vervaeke_values, label='Vervaeke2010', color='k')
     ax.plot(new_x, fermi_dirac_dependence(new_x, a, r_0, delta), label='Fermi function')
     ax.grid('on')
-    ax.set_xlabel(r'planar distance ($\mu m$)')
+    ax.set_xlabel(r'intersomatic distance ($\mu m$)')
+    ax.set_ylabel('probability of connection')
     ax.legend()
 
     plt.show()
 
 if __name__ == "__main__":
-    n_trials = 10
+    n_trials = 100
     positions = np.loadtxt(open("cell_positions.csv", "rb"), delimiter=",")
     n_cells = positions.shape[0]/n_trials
     positions = positions.reshape(n_trials, n_cells, 3)
@@ -53,13 +56,32 @@ if __name__ == "__main__":
 
     # load edge list for each trial
     edges = np.loadtxt(open("edge_lists.csv", "rb"), delimiter=",", dtype=np.int)
-    edge_lists = []
-    previous_edge = (None, None)
+    edge_lists = [[]]
+    previous_edge = (0,0)
+    conn_type = 0
+    trial = 0
+    edges_in_previous_conn_types = 0
+    n_edges = np.zeros((n_trials, 4), dtype=np.int)
     for e in edges:
-        if e[0] == 0 and previous_edge[0] != 0:
-            edge_lists.append([])
+        if e[0] < previous_edge[0]:
+            edges_in_this_conn_type = len(edge_lists[-1]) - edges_in_previous_conn_types
+            n_edges[trial, conn_type] = edges_in_this_conn_type
+            if conn_type == 3:
+                trial += 1
+                conn_type = 0
+                edges_in_previous_conn_types = 0
+                edge_lists.append([])
+            else:
+                edges_in_previous_conn_types = len(edge_lists[-1])
+                conn_type += 1
         edge_lists[-1].append(e)
         previous_edge = e
+    edges_in_this_conn_type = len(edge_lists[-1]) - edges_in_previous_conn_types
+    n_edges[trial, conn_type] = edges_in_this_conn_type
+    #print 2.*n_edges/n_cells
+    assert n_edges.sum() == len(edges)
+
+
     for k,l in enumerate(edge_lists):
         edge_lists[k] = np.array(l)
     # for each trial, create a temporary list where all edges are ordered (i<j)
@@ -86,12 +108,20 @@ if __name__ == "__main__":
         lengths = np.array([distances_squareform[trial][tuple(e)] for e in cell_pair_list])
         edge_lengths.append(lengths)
 
-    print distances[0].shape
-    print edge_lists[0].shape
-    print cell_pair_lol[0].shape
-    print edge_lengths[0].shape
-    print degree_sequences
-    print degree_sequences.mean()
+    alpha = degree_sequences.mean()
+    #deg_dist_simulated = binom(n_cells-1, alpha/n_cells)
+    #deg_dist_theoretical = binom(n_cells-1, infinite_net_analytical_sol(rho_goc=4.6e-6,
+    #                                                                    l=80.,
+    #                                                                    a=0.856,
+    #                                                                    r_0=122.,
+    #                                                                    delta=16.9)/n_cells)
+    deg_dist_simulated = poisson([alpha])
+    deg_dist_theoretical = poisson([infinite_net_analytical_sol(rho_goc=4.6e-6,
+                                                                        l=80.,
+                                                                        a=0.856,
+                                                                        r_0=122.,
+                                                                        delta=16.9)])
+    print("Average degree is {0}".format(alpha))
 
     hist_all = np.histogram(distances, range=[0.,160.])
     hist_connected = np.histogram(np.concatenate(edge_lengths), range=[0.,160.])
@@ -99,13 +129,21 @@ if __name__ == "__main__":
     fig, ax1 = plt.subplots()
     ax1.hist(x=(np.ravel(distances), np.concatenate(edge_lengths)), range=[0., 160.])
     ax2 = ax1.twinx()
-    ax1.set_xlabel(r'full euclidean distance ($\mu m$)')
+    ax1.set_xlabel(r'inter-somatic distance ($\mu m$)')
     # figure out the centres of the histogram bars on the x axis
     x = hist_all[1][:-1]+(hist_all[1][1]-hist_all[1][0])/2
     # plot the conected/total cells ratio
-    ax2.plot(x, np.nan_to_num(np.asarray(hist_connected[0], dtype=np.float)/np.asarray(hist_all[0], dtype=np.float)), marker='o', color='r', label='Vervaeke2010 - model')
+    ax2.plot(x, np.nan_to_num(np.asarray(hist_connected[0], dtype=np.float)/np.asarray(hist_all[0], dtype=np.float)), marker='o', color='r', label='Vervaeke2012 - model')
     # plot the fit to the experimental data (Vervaeke2010, figure 7)
     ax2.plot(x, vervaeke2010_spatial_dependence(x), marker='o', color='k', label='Vervaeke2010 - exp')
     ax2.set_ylim((0., 1.1))
-    ax2.legend(loc='upper left')
+    ax2.legend(loc='lower center')
+
+    fig3, ax3 = plt.subplots()
+    ax3.hist(list(itertools.chain(*degree_sequences)), bins=15, normed=True)
+    k_range = np.arange(0,26,1)
+    ax3.plot(k_range, deg_dist_theoretical.pmf(k_range), marker='o', label='analytical')
+    ax3.plot(k_range, deg_dist_simulated.pmf(k_range), marker='o', label='poisson from sim. data')
+    ax3.set_xlabel('degree')
+    ax3.legend(loc='best')
     plt.show()
