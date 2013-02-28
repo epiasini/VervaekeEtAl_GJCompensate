@@ -10,3 +10,4 @@ generatedFigures
 simulations
 *.bak
 *py.class
+*.graphml
