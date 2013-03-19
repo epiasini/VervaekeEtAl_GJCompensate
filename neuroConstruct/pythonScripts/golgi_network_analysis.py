@@ -141,7 +141,7 @@ if __name__ == "__main__":
     graphs = [nx.empty_graph(n_cells) for each in cell_pair_lol]
     for k,g in enumerate(graphs):
         g.add_edges_from(cell_pair_lol[k])
-        nx.write_graphml(g, 'graphs/graph_2012_ncells{0}_trial{1:02}.graphml'.format(n_cells, k))
+        nx.write_graphml(g, '../dataSets/graphs/graph_2012_ncells{0}_trial{1:02}.graphml'.format(n_cells, k))
 
     average_clustering_coefficients = np.array([nx.average_clustering(g) for g in graphs])
     print("Average clustering: {0} ± {1}".format(average_clustering_coefficients.mean(),
